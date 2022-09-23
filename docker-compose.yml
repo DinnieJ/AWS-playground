@@ -1,0 +1,64 @@
+version: '3.1'
+
+services:
+  playground-api:
+    container_name: playground-api
+    build:
+      context: .
+      dockerfile: ./docker/api.${APP_ENV}.dockerfile
+      args:
+        - python=${PYTHON_VERSION}
+        - db_host=${DB_HOST}
+        - db_port=${DB_PORT}
+        - db_user=${DB_USERNAME}
+        - db_pass=${DB_PASSWORD}
+        - db_name=${DB_NAME}
+    ports:
+      - 8000:8000
+    volumes:
+      - ./:/usr/app:rw
+    depends_on:
+      - playground-db
+    networks:
+      - playground
+
+  playground-db:
+    container_name: playground-db
+    image: postgres:${POSTGRES_VERSION}
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /data/postgres
+    volumes:
+       - ../data:/data/postgres:rw
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+    networks:
+      - playground
+
+  # localstack:
+  #   container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
+  #   image: localstack/localstack
+  #   ports:
+  #     - "127.0.0.1:4566:4566"            # LocalStack Gateway
+  #     - "127.0.0.1:4510-4559:4510-4559"  # external services port range
+  #     - "127.0.0.1:53:53"                # DNS config (only required for Pro)
+  #     - "127.0.0.1:53:53/udp"            # DNS config (only required for Pro)
+  #     - "127.0.0.1:443:443"              # LocalStack HTTPS Gateway (only required for Pro)
+  #   environment:
+  #     - DEBUG=${DEBUG-}
+  #     - PERSISTENCE=${PERSISTENCE-}
+  #     - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR-}
+  #     - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY-}  # only required for Pro
+  #     - DOCKER_HOST=unix:///var/run/docker.sock
+  #   volumes:
+  #     - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+  #     - "/var/run/docker.sock:/var/run/docker.sock"
+  #   networks:
+  #     - playground
+
+networks:
+  playground:
+    driver: bridge
